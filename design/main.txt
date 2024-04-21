@@ -1,0 +1,40 @@
+Concept
+-------
+
+Get the goal with minimal outlay.
+
+
+Features
+--------
+
+1. Download the API documentation
+   1.1. Saving the documentation to local storage of the Python package
+   1.2. Saving the documentaiton to user path
+2. Printing the documentation (from website, from local storage)
+   2.1. Open webpage
+   2.2. Print in terminal
+3. Choosing what documentation to read
+   3.1. By name
+   3.2. By matching(keyword)
+   3.3. By metainformation (e.g.: declaration, parameters, description)
+4. Stylyzing
+
+
+CLI behavior
+------------
+
+`getgl` - download the webcontent to local storage if it does not
+already downloaded. If it was give user help.
+`getgl --path{-p} /user/path` - downlaod the webcontent to user directory
+
+`getgl func_name` - search function and open it
+`getgl func_name -w` - search function and open it in the web
+If searching by name failed try searching with matching. It searching
+failed again suggest user make indexing of metainformation and use
+this search.
+
+`getgl name -m{--meta}` - find function by metainformation
+
+`-s{--style} /path/to/style` - style file that will be applied for web page.
+
+`getgl -g{--get} -p{--path} [func_name, style]`
