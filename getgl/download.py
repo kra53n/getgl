@@ -1,12 +1,7 @@
-'''
-Links for downloading API and its info:
-
-- https://registry.khronos.org/OpenGL-Refpages/gl4/html/bitfieldExtract.xhtml
-- https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/glGetShaderiv.xml
-'''
-
+from pathlib import Path
 from typing import Iterable
 from urllib import request
+from urllib.error import HTTPError
 
 from lxml import etree
 
@@ -15,28 +10,53 @@ GLSL_BASE_URL = 'https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/'
 GL_BASE_URL = 'https://registry.khronos.org/OpenGL-Refpages/gl4/html/'
 
 
-def get_url(base: str, what: str, ext: str):
-    return f'{base}{what}.{ext}'
+def get_url(base: str, what: str, file_extension: str):
+    return f'{base}{what}.{file_extension}'
 
 
 def get_funcs(url: str, find_str: str, skip: Iterable[str]) -> list[str]:
-    response = request.urlopen(url)
-    html = bytes().join(response.readlines())
+    with request.urlopen(url) as response:
+        html = bytes().join(response.readlines())
     root = etree.HTML(html)
     return [i.text for i in root.iterfind(find_str) if i.text not in skip]
 
 
-def download(what: str):
-    match what:
-        case 'glsl':
-            pass
-        case 'gl':
-            pass
-    raise Exception("`what` waiting 'glsl' or 'gl' string")
+def download_func(base_url: str,
+                  dir_name: str,
+                  func_name: Iterable[str],
+                  file_extension: str):
+    p = Path(dir_name) / f'{func_name}.{file_extension}'
+    if p.exists():
+        return
+    func_url = get_url(base_url, func_name, file_extension)
+    with request.urlopen(func_url) as response:
+        html = bytes().join(response.readlines())
+    p.write_bytes(html)
+
+
+def download_funcs(base_url: str,
+                   dir_name: str,
+                   func_names: Iterable[str],
+                   file_extension: str):
+    p = Path(dir_name)
+    if not (p.exists() and p.is_dir()):
+        p.mkdir()
+    for func_name in func_names:
+        try:
+            download_func(base_url,
+                          dir_name,
+                          func_name,
+                          file_extension)
+        except HTTPError as e:
+            # if 404 NotFound error occured that means function already
+            # in another file
+            if e.code == 404:
+                continue
+            raise e
+        
 
 
 if __name__ == '__main__':
-    from pprint import pprint
     glsl_funcs = get_funcs(
         url=get_url(GLSL_BASE_URL, 'index', 'html'),
         find_str='.//a[@target]',
@@ -47,7 +67,5 @@ if __name__ == '__main__':
         find_str='.//a[@target]',
         skip=('Introduction', ),
     )
-
-    pprint(glsl_funcs)
-    pprint(gl_funcs)
-    # download('glsl')
+    download_funcs(GLSL_BASE_URL, 'glsl', glsl_funcs, 'xml')
+    download_funcs(GL_BASE_URL, 'gl', gl_funcs, 'xhtml')
